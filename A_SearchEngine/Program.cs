@@ -12,25 +12,12 @@ namespace A_SearchEngine
         private Dictionary<string, int> _uniqueWordsCount { get; set; }
         private Dictionary<string, int> _relevanceValueHistory = new Dictionary<string, int>();
 
-        public string Text { get; }
         public int Id { get; }
 
         public Document(string text)
         {
             Id = ++_currentId;
-            Text = text;
-            _uniqueWordsCount = new Dictionary<string, int>();
-            foreach (var item in text.Split(' '))
-            {
-                if (_uniqueWordsCount.ContainsKey(item))
-                {
-                    _uniqueWordsCount[item]++;
-                }
-                else
-                {
-                    _uniqueWordsCount.Add(item, 1);
-                }
-            }
+            _uniqueWordsCount = text.Split(' ').GroupBy(s => s).ToDictionary(grp => grp.Key, grp => grp.Count());
         }
 
         public int CalculateRelevance(string request)
@@ -64,7 +51,6 @@ namespace A_SearchEngine
             {
                 Documents.Add(new Document(_reader.ReadLine()));
             }
-
 
             var m = ReadInt();
             for (int i = 0; i < m; i++)
