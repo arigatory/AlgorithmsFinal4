@@ -1,37 +1,83 @@
-﻿using System;
+﻿// https://contest.yandex.ru/contest/24414/run-report/67202455/
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace A_SearchEngine
 {
+    class SearchEngine
+    {
+        private List<Document> _documents = new();
+        private Dictionary<string, Dictionary<int, int>> _wordDocumentNumberCount = new();
+
+        public void AddDocument(Document document)
+        {
+            _documents.Add(document);
+            Dictionary<string, int> uniqueWordsCount = document.Text.Split(' ').GroupBy(s => s).ToDictionary(grp => grp.Key, grp => grp.Count());
+            foreach (var word in uniqueWordsCount)
+            {
+                if (_wordDocumentNumberCount.ContainsKey(word.Key))
+                {
+                    _wordDocumentNumberCount[word.Key][document.Id] = word.Value;
+                }
+                else
+                {
+                    _wordDocumentNumberCount[word.Key] = new Dictionary<int, int>();
+                    _wordDocumentNumberCount[word.Key].Add(document.Id, word.Value);
+                }
+            }
+        }
+
+        public List<int> GetBestIdsByRequest(string request)
+        {
+            var words = new HashSet<string>(request.Split(' '));
+
+            Dictionary<int, int> documentIdOccurenceCount = new Dictionary<int, int>();
+
+            foreach (var word in words)
+            {
+                if (!_wordDocumentNumberCount.ContainsKey(word))
+                {
+                    continue;
+                }
+                Dictionary<int, int> documentIdTotalWords = _wordDocumentNumberCount[word];
+                foreach (var idCount in documentIdTotalWords)
+                {
+                    if (documentIdOccurenceCount.ContainsKey(idCount.Key))
+                    {
+                        documentIdOccurenceCount[idCount.Key] += idCount.Value;
+                    }
+                    else
+                    {
+                        documentIdOccurenceCount[idCount.Key] = idCount.Value;
+                    }
+                }
+            }
+
+
+            var result = documentIdOccurenceCount
+                   .OrderByDescending(d => d.Value)
+                   .ThenBy(d => d.Key)
+                   .Select(d => d.Key)
+                   .Take(Math.Min(5, documentIdOccurenceCount.Count))
+                   .ToList();
+
+            return result;
+        }
+
+    }
 
     class Document
     {
         private static int _currentId;
-        private Dictionary<string, int> _uniqueWordsCount { get; set; }
-        private Dictionary<string, int> _relevanceValueHistory = new Dictionary<string, int>();
 
         public int Id { get; }
-
+        public string Text { get; set; }
         public Document(string text)
         {
             Id = ++_currentId;
-            _uniqueWordsCount = text.Split(' ').GroupBy(s => s).ToDictionary(grp => grp.Key, grp => grp.Count());
-        }
-
-        public int CalculateRelevance(string request)
-        {
-            if (_relevanceValueHistory.ContainsKey(request))
-            {
-                return _relevanceValueHistory[request];
-            }
-
-            var uniqueWords = new HashSet<string>(request.Split(' '));
-            int relevance = _uniqueWordsCount.Where(s => uniqueWords.Contains(s.Key)).Select(x => x.Value).Sum();
-
-            _relevanceValueHistory[request] = relevance;
-            return relevance;
+            Text = text;
         }
     }
 
@@ -43,27 +89,21 @@ namespace A_SearchEngine
         public static void Main(string[] args)
         {
             InitialiseStreams();
-
-            var Documents = new List<Document>();
+            SearchEngine searchEngine = new SearchEngine();
 
             var n = ReadInt();
             for (int i = 0; i < n; i++)
             {
-                Documents.Add(new Document(_reader.ReadLine()));
+                searchEngine.AddDocument(new Document(_reader.ReadLine()));
             }
 
             var m = ReadInt();
             for (int i = 0; i < m; i++)
             {
                 var request = _reader.ReadLine();
-                var result = Documents.Where(d => d.CalculateRelevance(request) != 0)
-                    .OrderByDescending(d => d.CalculateRelevance(request)).ToList();
-                var total = Math.Min(result.Count, 5);
-                for (int j = 0; j < total && result[j].CalculateRelevance(request) != 0; j++)
-                {
-                    _writer.Write($"{result[j].Id} ");
-                }
-                _writer.WriteLine();
+                var result = searchEngine.GetBestIdsByRequest(request);
+
+                _writer.WriteLine(string.Join(" ", result));
             }
 
             CloseStreams();
