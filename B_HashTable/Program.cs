@@ -1,4 +1,5 @@
 ﻿// https://contest.yandex.ru/contest/24414/run-report/67215556/
+// новая посылка: https://contest.yandex.ru/contest/24414/run-report/67286080/
 
 /* 
  * -- ПРИНЦИП РАБОТЫ --
@@ -37,7 +38,7 @@ namespace B_HashTable
         private int _size;
         public MyHashTable(int size)
         {
-            _size = size / 10;
+            _size = size >> 3;
             _array = new Node[_size + 1];
         }
 
@@ -57,7 +58,7 @@ namespace B_HashTable
 
         private int GetBucketIndex(int num)
         {
-            return num & _size;
+            return num.GetHashCode() % _size;
         }
 
         public void Put(int key, int value)
@@ -168,7 +169,6 @@ namespace B_HashTable
             var n = ReadInt();
 
             MyHashTable hashTable = new MyHashTable(n);
-
 
             for (int i = 0; i < n; i++)
             {
