@@ -20,8 +20,7 @@
  * 
  * 
  * -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
- * O(1), но константа C в данном случае большая, C = 2^18, так как мы выделяем много памяти под массив,
- * даже если нужно будет хранить всего 1 элемент.
+ * O(n), где n - количество предполагаемых запросов.
  */
 
 
@@ -33,7 +32,14 @@ namespace B_HashTable
 
     class MyHashTable
     {
-        const int SIZE = 0b1111111111111111;
+
+        private Node[] _array;
+        private int _size;
+        public MyHashTable(int size)
+        {
+            _size = size / 10;
+            _array = new Node[_size + 1];
+        }
 
         class Node
         {
@@ -49,24 +55,20 @@ namespace B_HashTable
             public Node Next { get; set; }
         }
 
-
-        private int MyHash(int num)
+        private int GetBucketIndex(int num)
         {
-            return num & SIZE;
+            return num & _size;
         }
-
-        Node[] _array = new Node[SIZE + 1];
-
 
         public void Put(int key, int value)
         {
             var node = new Node(key, value, null);
-            int hash = MyHash(node.Key);
-            var placeToInsert = _array[hash];
+            int backetIndex = GetBucketIndex(node.Key);
+            var placeToInsert = _array[backetIndex];
 
             if (placeToInsert == null)
             {
-                _array[hash] = node;
+                _array[backetIndex] = node;
             }
             else
             {
@@ -84,70 +86,70 @@ namespace B_HashTable
                     placeToInsert.Value = value;
                     return;
                 }
-                node.Next = _array[hash];
-                _array[hash] = node;
+                node.Next = _array[backetIndex];
+                _array[backetIndex] = node;
             }
         }
 
         public int Get(int key)
         {
-            int hash = MyHash(key);
-            var placeToGet = _array[hash];
+            int backetIndex = GetBucketIndex(key);
+            var placeToGetFrom = _array[backetIndex];
 
-            if (placeToGet == null)
+            if (placeToGetFrom == null)
             {
                 return -1;
             }
 
-            while (placeToGet != null)
+            while (placeToGetFrom != null)
             {
-                if (placeToGet.Key == key)
+                if (placeToGetFrom.Key == key)
                 {
-                    return placeToGet.Value;
+                    return placeToGetFrom.Value;
                 }
-                placeToGet = placeToGet.Next;
+                placeToGetFrom = placeToGetFrom.Next;
             }
             return -1;
         }
 
         public int Delete(int key)
         {
-            var hash = MyHash(key);
-            var placeToDelete = _array[hash];
-            if (placeToDelete == null)
+            var backerIndex = GetBucketIndex(key);
+            var placeWhereDelete = _array[backerIndex];
+            if (placeWhereDelete == null)
             {
                 return -1;
             }
 
-            if (placeToDelete.Next == null)
+            if (placeWhereDelete.Next == null)
             {
-                if (placeToDelete.Key != key)
+                if (placeWhereDelete.Key != key)
                 {
                     return -1;
                 }
-                var res = placeToDelete.Value;
-                _array[hash] = null;
+                var res = placeWhereDelete.Value;
+                _array[backerIndex] = null;
                 return res;
             }
 
-            var priveousNode = placeToDelete;
-            placeToDelete = placeToDelete.Next;
+            var priveousNode = placeWhereDelete;
+            placeWhereDelete = placeWhereDelete.Next;
 
             if (priveousNode.Key == key)
             {
-                _array[hash] = priveousNode.Next;
+                _array[backerIndex] = priveousNode.Next;
                 return priveousNode.Value;
             }
 
-            while (placeToDelete != null)
+            while (placeWhereDelete != null)
             {
-                if (placeToDelete.Key == key)
+                if (placeWhereDelete.Key == key)
                 {
-                    priveousNode.Next = placeToDelete.Next;
-                    return placeToDelete.Value;
+                    priveousNode.Next = placeWhereDelete.Next;
+                    return placeWhereDelete.Value;
                 }
-                priveousNode = placeToDelete;
-                placeToDelete = placeToDelete.Next;
+                priveousNode = placeWhereDelete;
+                placeWhereDelete = placeWhereDelete.Next;
             }
 
             return -1;
@@ -163,11 +165,9 @@ namespace B_HashTable
         public static void Main(string[] args)
         {
             InitialiseStreams();
-            MyHashTable hashTable = new MyHashTable();
-
-
             var n = ReadInt();
 
+            MyHashTable hashTable = new MyHashTable(n);
 
 
             for (int i = 0; i < n; i++)
